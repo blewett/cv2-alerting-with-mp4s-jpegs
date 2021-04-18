@@ -1,0 +1,157 @@
+<!--
+/*
+ * gmail-config.html: Original work Copyright (C) 2021 by Blewett
+
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+ */
+-->
+
+<script type="text/javascript">
+
+function HelpAlert(message)
+{
+    var messages = [];
+
+    messages["login"] = "Click this to setup or login to your gmail account.  The account must be logged in prior to setting the security settings below.";
+
+    messages["settings"] = "Click this to set the security settings.  The setting must be set to allow less secure applications to allow the monitor to send email.  You can disable access after you have run the monitor.  It is best to check the settings prior to each run.  Google changes the setting when the account is idle.\n\nThe account must be logged in prior to setting the security settings.";
+
+   alert(messages[message]);
+}
+</script>
+
+<!doctype html>
+<html>
+
+  <head>
+
+    <meta charset="utf-8">
+
+    <style>
+      <!--
+       * css for setting up gmail account
+       *
+       -->
+
+      *.left {
+	  margin-left: auto;
+	  margin-right: auto;
+	  text-align: left;
+      }
+
+      *.right {
+	  margin-left: auto;
+	  margin-right: auto;
+	  text-align: right;
+      }
+
+      *.center {
+	  margin-left: auto;
+	  margin-right: auto;
+	  text-align: center;
+      }
+
+      a {
+	  font-size: 14px;
+	  padding: 10px;
+	  text-decoration: underline;
+	  color: rgba(0,39,160,1.00);
+      }
+
+      a.vote:link {
+	  color: rgba(0,39,160,1.00);
+      }
+      a.vote:visited {
+	  color: rgba(0,39,160,1.00);
+      }
+      a.vote:hover {
+	  color:rgba(128,39,255,1.00);
+      }
+
+    </style>
+
+    <title>setup gmail</title>
+
+  </head>
+
+  <body>
+
+    <div id="all">
+
+      <div id="top" class="center">
+	<a href="https://www.google.com/gmail">
+	  <img src="AlejandroEscamilla_roundweb.jpeg"
+	       alt="gmail login links" height="160">
+<!--
+	       The Alejandro Escamilla image is from unsplash.com.
+	       unsplash license: Unsplash photos are made to be used
+	       freely. Our license reflects that. All photos can be
+	       downloaded and used for free; Commercial and
+	       non-commercial purposes; No permission needed (though
+	       attribution is appreciated!); What is not permitted:
+	       Photos cannot be sold without significant
+	       modification.; Compiling photos from Unsplash to
+	       replicate a similar or competing service.
+-->
+	</a>
+      </div>
+
+      <div id="middle">
+
+	<h2 class="center"> setup gmail to send monitor alerts </h2>
+
+	<table class="center">
+
+	  <tr>
+	    <td class="right">gmail login:</td>
+	    <td class="center">
+	      <a target="_blank"
+		 href="https://www.google.com/gmail">
+		login into a gmail account
+	      </a>
+	    </td>
+	    <td class="left">
+	      <a href="javascript:HelpAlert('login')" class="linkStyle vote">Help</a>
+	    </td>
+	  </tr>
+
+	  <tr>
+	    <td class="right">gmail settings:</td>
+	    <td class="center">
+	      <a target="_blank"
+		 href="https://www.google.com/settings/security/lesssecureapps">
+		change the security settings
+	      </a>
+	    </td>
+	    <td class="left">
+	      <a href="javascript:HelpAlert('settings')" class="linkStyle vote">Help</a>
+	    </td>
+	  </tr>
+	</table>
+
+      </div>
+
+    </div>
+
+  </body>
+
+</html>
