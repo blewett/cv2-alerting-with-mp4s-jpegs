@@ -156,38 +156,35 @@ class rectx:
 # coalesce rectangles
 def coalesce(rects):
     length = len(rects)
-    roll = True
-    while roll == True:
-        roll = False
+    outer = 0
+    while outer < length:
+        rx = rects[outer]
+        outer += 1
+        if rx.flag == False:
+            continue
 
-        outer = 0
-        while outer < length:
-            rx = rects[outer]
-            outer += 1
-            if rx.flag == False:
+        inner = outer
+        while inner < length:
+            rt = rects[inner]
+            inner += 1
+            if rt.flag == False:
                 continue
-            inner = outer
-            while inner < length:
-                rt = rects[inner]
-                inner += 1
-                if rt.flag == False:
-                    continue
 
-                if rt.rectinrect(rx):
-                    rx.flag = False
-                    continue
+            if rt.rectinrect(rx):
+                rx.flag = False
+                break
 
-                if rx.rectxrect(rt):
-                    rt.addrect(rx)
+            if rt.rectxrect(rx):
+                if rx.width * rx.height >= rt.width * rt.height:
+                    rt.flag = False
+                    break
+                elif rt.width * rt.height > rx.width * rx.height:
                     rx.flag = False
-                    roll = True
-                    continue
 
 # end of coalesce(rects):
 
-
-# find comparison frame1 - loop until frames match - count == 0
-def find_comparison_frame1(cap, frame_min_size_areas):
+# find comparison frame1 - loop until frames match - count <= 2
+def find_comparison_frame1(cap):
     count = 16
     repetitions = 0
     while count > 2:
@@ -196,15 +193,9 @@ def find_comparison_frame1(cap, frame_min_size_areas):
         repetitions += 1
         #print("calculating comparison frame pass: " + str(repetitions))
 
-        if cv2.waitKey(40) == ord('q'):
-            exit(0)
-
         ret1,frame1 = cap.read()
         gray1 = cv2.cvtColor(frame1, cv2.COLOR_BGR2GRAY)
         gray1 = cv2.GaussianBlur(gray1, (21, 21), 0)
-
-        if cv2.waitKey(40) == ord('q'):
-            exit(0)
 
         ret2,frame2 = cap.read()
         gray2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
@@ -213,26 +204,92 @@ def find_comparison_frame1(cap, frame_min_size_areas):
         deltaframe = cv2.absdiff(gray1,gray2)
         threshold = cv2.threshold(deltaframe, 25, 255, cv2.THRESH_BINARY)[1]
         threshold = cv2.dilate(threshold, None)
-        countour,heirarchy = cv2.findContours(threshold, cv2.RETR_EXTERNAL, 
+        contours,heirarchy = cv2.findContours(threshold, cv2.RETR_EXTERNAL, 
                                               cv2.CHAIN_APPROX_SIMPLE)
         count = 0
-        for i in countour:
+        for i in contours:
             if cv2.contourArea(i) >= frame_min_size_areas:
                 count += 1
 
     return frame2, gray2
-    # end of find comparison frame1
+
+# end of find comparison frame1
 
 
-def date_filename(prefix, postfix):
-    f = datetime.datetime.now().strftime("%H-%M-%S--%d-%m-%Y")
-    f = prefix + "." + f + "." + postfix
-    return f
+def skip_frames(cap, frame1, gray1, fr_area, fr):
+    areas = []
+    frames = []
+    rectl = []
+    area = 0
 
+    for skips in range(1, frame_jpgs_capture):
+        ret2,frame2 = cap.read()
+        gray2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
+        gray2 = cv2.GaussianBlur(gray2, (21, 21), 0)
+        
+        deltaframe=cv2.absdiff(gray1,gray2)
+        threshold = cv2.threshold(deltaframe, 25, 255, cv2.THRESH_BINARY)[1]
+        threshold = cv2.dilate(threshold, None)
+        contours,heirarchy = cv2.findContours(threshold, cv2.RETR_EXTERNAL, 
+                                             cv2.CHAIN_APPROX_SIMPLE)
+
+        # collect and count the workable rectangles
+        count = 0
+        if len(contours) > 0:
+            rects = []
+            area = 0
+            for region in contours:
+                area_tmp = cv2.contourArea(region)
+                if (area_tmp < frame_min_size_areas):
+                    continue
+                area += area_tmp
+                (x, y, w, h) = cv2.boundingRect(region)
+                rx = rectx(x, y, w, h)
+                rects.append(rx)
+
+            areas.append(area)
+            frames.append(frame2)
+            rectl.append(rects)
+        # end of if len(contours) > 0
+
+    length = len(areas)
+    which = 0
+    if length != 0:
+        for i in range(0, length):
+            if areas[i] > area:
+                which = i
+                area = areas[i]
+
+        if fr_area >= area:
+            return fr
+
+        rects = rectl[which]
+        coalesce(rects)
+        frame2 = frames[which]
+
+        # draw the rectangles
+        for rx in rects:
+            if rx.flag == False:
+                continue
+            cv2.rectangle(frame2, (rx.x, rx.y),
+                          (rx.x + rx.width, rx.y + rx.height),
+                          (255, 0, 0), 1)
+    # end of if length != 0
+
+    label_frame(frame2)
+    return frame2
+# end of skip_frames
 
 def date_time_string():
-    return datetime.datetime.now().strftime("%H:%M:%S  %d/%m/%Y")
+    t = datetime.datetime.now().strftime("%f")[:-5]
+    f = datetime.datetime.now().strftime("%H-%M-%S." + t + "  %d/%m/%Y")
+    return f
 
+def date_filename(prefix, postfix):
+    t = datetime.datetime.now().strftime("%f")[:-5]
+    f = datetime.datetime.now().strftime("%H-%M-%S." + t + "--%d-%m-%Y")
+    f = prefix + "." + f + "." + postfix
+    return f
 
 def label_frame(frame):
     # font type and dimensions
@@ -285,23 +342,39 @@ def camera_monitor(queue):
 
     # frame_trailing_writes is the frame count set to be written
     #  this is set AFTER motion is detected
-    frame_trailing_writes = frame_write_addon_count
+    # frame_trailing_writes = frame_write_addon_count
+    frame_trailing_writes = 10
 
     # idle_count for detecting idle conditions and switching files
     # frame_idle_count = 24
 
     # number of repeated rectangles to trigger a frame1 reset
-    # frame_reset_count = 32
-    frame_reset_frame1 = False
+    # frame_reset_count = 64
+    # frame_reset_frame1 = False
 
     # variables for writing jpgs
     # frame_write_jpgs = True
-    # frame_jpgs_min = 32
+    # frame_jpgs_min = 16
     # frame_scale = 1
 
     frames_jpgs_frame_count = 0
     frames_jpgs_width = 0
     frames_jpgs_height = 0
+
+    frames_idle = 0
+    frames_have_been_written = False
+
+    # prime the reader - make sure that the frames are readable
+    for i in range(8):
+        ret1,frame1= cap.read()
+
+    # set up to read the first comparison frame
+    (frame1, gray1) = find_comparison_frame1(cap)
+    frame_reset_frame1 = False
+
+    # rectangles array to check for stationary objects moved into the field
+    frame1_rectangles = []
+    frame_reset_frame1 = False
 
     #
     # setup to write mp4 video files
@@ -310,37 +383,28 @@ def camera_monitor(queue):
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         frame_video_filename = date_filename("motion", "mp4")
         video_file = cv2.VideoWriter(frame_video_filename, fourcc, 10,
-                                 (frame_width, frame_height))
+                                     (frame_width, frame_height))
         print(frame_video_filename)
     else:
         frame_video_filename = ""
 
-    frames_idle = 0
-    frames_have_been_written = False
-
-    # prime the reader - make sure that the frames are readable
-    count = 0
-    while count < 8:
-        ret1,frame1= cap.read()
-        if cv2.waitKey(20) == ord('q'):
-            exit(0)
-        count += 1
-
-    # read the first comparison frame
-    (frame1, gray1) = find_comparison_frame1(cap, frame_min_size_areas)
-
-    # rectangles array to check for stationary objects moved into the field
-    frame1_rectangles = []
-
     while True:
+        if frame_reset_frame1 == True:
+            frame_reset_frame1 = False
+            (frame1, gray1) = find_comparison_frame1(cap)
+            frame1_rectangles = []
+
+        if cv2.waitKey(8) == ord('q'):
+            break
+
         ret2,frame2 = cap.read()
         gray2 = cv2.cvtColor(frame2, cv2.COLOR_BGR2GRAY)
         gray2 = cv2.GaussianBlur(gray2, (21, 21), 0)
         
         deltaframe=cv2.absdiff(gray1,gray2)
         threshold = cv2.threshold(deltaframe, 25, 255, cv2.THRESH_BINARY)[1]
-        threshold = cv2.dilate(threshold,None)
-        contour,heirarchy = cv2.findContours(threshold, cv2.RETR_EXTERNAL, 
+        threshold = cv2.dilate(threshold, None)
+        contours,heirarchy = cv2.findContours(threshold, cv2.RETR_EXTERNAL, 
                                               cv2.CHAIN_APPROX_SIMPLE)
 
         if frame_write_jpgs == True:
@@ -348,78 +412,79 @@ def camera_monitor(queue):
 
         # collect and count the workable rectangles
         count = 0
-        if len(contour) > 0:
+        area = 0
+        if len(contours) > 0:
             rects = []
-            for element in contour:
-                if (cv2.contourArea(element) < frame_min_size_areas):
+            for region in contours:
+                area_tmp = cv2.contourArea(region)
+                if (area_tmp < frame_min_size_areas):
                     continue
-
-                (x, y, w, h) = cv2.boundingRect(element)
+                area += area_tmp
+                (x, y, w, h) = cv2.boundingRect(region)
                 rx = rectx(x, y, w, h)
                 rects.append(rx)
 
             coalesce(rects)
 
-            # count the workable contours
-            count = 0
-            for rt in rects:
-                if rt.flag == True:
-                    count += 1
-
-        # there are active rectangles to process
-        if (count > 0):
-            frame_trailing_writes = frame_write_addon_count
-            frame_reset_frame1 = False
-            frames_idle = 0
-
-            # loop over contour rectangles
+            # draw the rectangles - count the good ones
             for rx in rects:
                 if rx.flag == False:
                     continue
- 
+
+                count += 1
                 cv2.rectangle(frame2, (rx.x, rx.y),
                               (rx.x + rx.width, rx.y + rx.height),
-                              (255, 0, 0), 2)
+                              (255, 0, 0), 1)
 
-                # search for previous matching rectangles - reset frame1
-                found = False
-                for rt in frame1_rectangles:
-                    if rt.recteqrect(rx) or rt.rectinrect(rx):
-                        rt.count += 1
-                        if rt.count > frame_reset_count:
-                            frame_reset_frame1 = True
+                # check for stationary objects
+                if frame_reset_frame1 == False:
+                    found = False
+                    for rt in frame1_rectangles:
+                        if rt.recteqrect(rx) or rt.rectinrect(rx):
+                            rt.count += 1
+                            if rt.count > frame_reset_count:
+                                frame_reset_frame1 = True
+                                break
                             found = True
-                            break
 
-                if found == False:
-                    frame1_rectangles.append(rx)
+                    if found == False:
+                        frame1_rectangles.append(rx)
+            # end of for rx in rects:
+        # end of if len(contours) > 0
 
-            # end for loop over contours
-
-            # background frame1 trigger happened - get a new background
-            if frame_reset_frame1 == True:
-                frame_reset_frame1 = False
-                (frame1, gray1) = find_comparison_frame1(cap, frame_min_size_areas)
+        # idle count is used for video files
+        if count == 0:
+            if frame_write_jpgs == False:
+                frames_idle += 1
+            if len(frame1_rectangles) > 0:
                 frame1_rectangles = []
-                frames_idle = 0
+                frame_reset_frame1 = False
 
-        # end if count > 0
+        if count > 0:
+            frame_trailing_writes = frame_write_addon_count
+            frames_idle = 0
 
         # label the frame with the date and time
         label_frame(frame2)
 
+        # display the frame
         # set frame_count_between_updates to throttle interactive output
         if frame_no_display == False:
             if frame_count >= frame_count_between_updates:
                 cv2.imshow('window', frame2)
                 frame_count = 0
+            # always 1
             frame_count += 1
 
-        if frame_write_jpgs == True:
-            if count > 0 and frames_jpgs_frame_count > frame_jpgs_min:
+        # process jpgs
+        if count == 0 and frame_write_jpgs == True:
+            continue
+        if count > 0 and frame_write_jpgs == True:
+            if frames_jpgs_frame_count > frame_jpgs_min:
                 # skip the first few frames
-                for x in range(frame_jpgs_capture):
-                    ret2,frame2 = cap.read()
+                if frame_jpgs_capture > 0:
+                    frame2 = skip_frames(cap, frame1, gray1, area, frame2)
+
                 if frame_scale != 1:
                     frame2 = cv2.resize(frame2, (frame_width, frame_height))
 
@@ -432,9 +497,6 @@ def camera_monitor(queue):
                 print(frame_video_filename)
 
                 frames_jpgs_frame_count = 0
-
-            if cv2.waitKey(20) == ord('q'):
-                    break
             continue
         # continue to while True if processing jpgs
 
@@ -445,9 +507,6 @@ def camera_monitor(queue):
             video_file.write(frame2)
             frame_trailing_writes -= 1
             frames_have_been_written = True
-        elif frame_one_file_only == False:
-            frames_idle += 1
-            frame1_rectangles = []
 
         # open the a new video file while idle
         if (frame_one_file_only == False and
@@ -466,15 +525,12 @@ def camera_monitor(queue):
             frames_idle = 0
             frames_have_been_written = False
 
-        if cv2.waitKey(20) == ord('q'):
-            break
-
     # end while true
     
     if frame_write_jpgs == False:
         video_file.release()
         cap.release()
-        if frames_have_been_written == False:
+        if (frames_have_been_written == False):
             os.remove(frame_video_filename)
 
     cv2.destroyAllWindows()
@@ -725,8 +781,8 @@ frame_one_file_only = False
 
 # variables for writing jpgs
 frame_write_jpgs = False
-frame_jpgs_min = 32
-frame_jpgs_capture = 3
+frame_jpgs_min = 16
+frame_jpgs_capture = 4
 frame_scale = 1
 
 # variables for transporting jpgs and mp4s
@@ -875,7 +931,7 @@ def parse_args():
             i += 1
             continue
     
-        # frame_jpgs_min = 32
+        # frame_jpgs_min
         if (arg == "-jpg-min-frames"):
             i += 1
             if i >= argc:
@@ -893,7 +949,7 @@ def parse_args():
             i += 1
             continue
     
-        # frame_jpgs_capture = 4
+        # frame_jpgs_capture
         if (arg == "-jpg-capture-frames"):
             i += 1
             if i >= argc:
