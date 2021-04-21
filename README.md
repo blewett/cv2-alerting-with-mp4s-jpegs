@@ -9,7 +9,6 @@ pip install opencv-python
 cv2 is the bit that contains all of the magic.
 
 ![alt text](https://github.com/blewett/cv2-alerting-with-mp4s-jpegs/blob/main/images/street.jpeg?raw=true)
-3
 
 There is a wide interest in using video cameras for monitoring.  There are many commercial systems on the market that do this.  Most of those systems have a monthly subscription fee.  The fees cover Internet storage of videos and images (usually jpeg or mp4 format) and some form of alerting system.  The alerting systems send text messages or an emails when motion occurs in front the one or more cameras and have a system for group storage of images from multiple cameras.  The system contained here does all of this and requires no subscription fees.  Further, this system is under the control of the user, rather than a commercial entity.  Monitoring can be setup on most any computer with an attached video camera.
 
