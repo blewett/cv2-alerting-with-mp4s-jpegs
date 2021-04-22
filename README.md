@@ -1,5 +1,5 @@
 # cv2-alerting-with-mp4s-jpegs
-![alt text](https://github.com/blewett/cv2-alerting-with-mp4s-jpegs/blob/main/images/coffee.jpeg?raw=true)
+![alt text](https://github.com/blewett/cv2-alerting-with-mp4s-jpegs/blob/main/images/street2.jpeg?raw=true)
 
 This system is built on the Open Computer Vision module – usually referred to as cv2. Install it, after installing python, with the
 following:
