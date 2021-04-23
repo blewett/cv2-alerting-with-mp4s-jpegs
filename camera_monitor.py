@@ -365,8 +365,20 @@ def camera_monitor(queue):
     frames_have_been_written = False
 
     # prime the reader - make sure that the frames are readable
-    for i in range(8):
-        ret1,frame1= cap.read()
+    # Start time
+    print("calculating frames per second")
+    num_frames = 60
+    start = time.time()
+
+    for i in range(0, num_frames) :
+        ret, frame = cap.read()
+
+    end = time.time()
+    seconds = end - start
+    
+    # Calculate frames per second
+    fps  = round(num_frames / seconds)
+    print("Estimated frames per second : " + str(fps))
 
     # set up to read the first comparison frame
     (frame1, gray1) = find_comparison_frame1(cap)
@@ -382,7 +394,7 @@ def camera_monitor(queue):
     if frame_write_jpgs == False:
         fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         frame_video_filename = date_filename("motion", "mp4")
-        video_file = cv2.VideoWriter(frame_video_filename, fourcc, 10,
+        video_file = cv2.VideoWriter(frame_video_filename, fourcc, fps,
                                      (frame_width, frame_height))
         print(frame_video_filename)
     else:
@@ -897,7 +909,7 @@ def parse_args():
             if arg_int < 0:
                 print(prog + ": the -idle-count must be zero or greater")
                 exit(1)
-            frame_idle_count = arg_int0
+            frame_idle_count = arg_int
             i += 1
             continue
     
