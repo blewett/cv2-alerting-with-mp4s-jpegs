@@ -1,5 +1,5 @@
 # cv2-alerting-with-mp4s-jpegs
-![alt text](https://github.com/blewett/cv2-alerting-with-mp4s-jpegs/blob/main/images/street2.jpeg?raw=true)
+![alt text](https://github.com/blewett/cv2-alerting-with-mp4s-jpegs/blob/main/images/street3.jpeg?raw=true)
 
 This system is built on the Open Computer Vision module – usually referred to as cv2. Install it, after installing python, with the
 following:
@@ -20,7 +20,7 @@ python3 camera_monitor.py -write-jpgs
 
 This will result in jpeg images being written to the current directory when motion occurs in front of the camera.  The default is to create mp4 videos and the -write-jpgs option overrides that.  There are many options that the user can set to change the behavior of the system.  The system provided defaults for options work for most people and need not be set to use the system.  Of course, the user has the python code and can modify it as they wish.
 
-The repository contains python files for capturing motion events and php code for uploading those captured images.  There is a doc file that explains how to setup and use the system across platforms.
+The repository contains python files for capturing motion events and php code for uploading those captured images.  There is a doc file and a README-camera.txt file that explains how to setup and use the system across platforms.
 
 Doug Blewett
 
